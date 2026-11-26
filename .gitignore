@@ -1,3 +1,5 @@
 .DS_Store
 .env
 gateway/target/
+web/node_modules/
+web/dist/

@@ -17,11 +17,12 @@ make up
 ```
 
 This builds the images, starts the stack, waits until Accumulo is ready and
-writes 20 fake patients. Use `make down` to stop it, and `make clean` to stop
-it and delete all data.
+writes 20 fake patients. Then open http://localhost:5173. Use `make down` to
+stop it, and `make clean` to stop it and delete all data.
 
 `make seed` writes the 20 patients again. So does every `make up`. This puts
-back any patient that you deleted.
+back any patient that you deleted. The seed then runs a compaction, so the
+files hold one version of each cell.
 
 `make unit` runs the unit tests in Docker. You do not need Java or Go
 installed.
@@ -135,3 +136,30 @@ hold. A legal hold means the record must be kept, which pulls against the
 right to erasure. The refusal is in the audit log too.
 
 The audit log is in memory, so a restart clears it.
+
+## The web page
+
+`web/` is one React page, built with Vite and Tailwind and served by nginx on
+http://localhost:5173. nginx also forwards `/api` to the API. Compose binds
+the port to localhost only.
+
+- Pick a role with the big buttons. For Patient, also pick a patient id.
+- The table shows the same 20 patients. A cell that Accumulo did not return
+  shows as a grey `hidden` chip. You cannot tell if that cell is secret or
+  empty, because Accumulo does not say.
+- Admin holds every label, so for Admin a missing cell shows as `none`.
+- Admin also gets a side panel. Pick a patient id to see every stored cell
+  of that row with its label, and the audit log.
+
+The page uses 16px text or larger and high contrast. It works with the
+keyboard. Each chip has a word on it, so colour is never the only signal.
+
+To work on the page with live reload, run `make up`, then:
+
+```
+cd web
+npm ci
+npm run dev
+```
+
+`npm run dev` forwards `/api` to http://localhost:8080.

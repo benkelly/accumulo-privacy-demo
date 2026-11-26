@@ -36,6 +36,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	})
+	mux.HandleFunc("GET /api/me", s.withCaller(me))
 	mux.HandleFunc("GET /api/patients", s.withCaller(s.list))
 	mux.HandleFunc("GET /api/patients/{id}", s.withCaller(s.get))
 	mux.HandleFunc("DELETE /api/patients/{id}", s.withCaller(adminOnly(s.delete)))
@@ -73,6 +74,11 @@ func adminOnly(h handler) handler {
 		}
 		h(w, r, c)
 	}
+}
+
+// me returns the caller's role and labels, so the web page can show them. It is not audited.
+func me(w http.ResponseWriter, r *http.Request, c caller) {
+	writeJSON(w, http.StatusOK, map[string]any{"role": c.role, "patient": c.patient, "auths": c.auths})
 }
 
 func (s *Server) list(w http.ResponseWriter, r *http.Request, c caller) {
