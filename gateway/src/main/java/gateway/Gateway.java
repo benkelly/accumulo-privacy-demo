@@ -53,10 +53,8 @@ public class Gateway {
       String row = require(body(ex, RowRequest.class).row(), "row");
       return Map.of("deleted", store.delete(row));
     });
-    route(server, "POST", "/compact", (ex, q) -> {
-      store.compact();
-      return Map.of("ok", true);
-    });
+    route(server, "POST", "/compact", (ex, q) -> Map.of("oldFiles", store.compact().size()));
+    route(server, "GET", "/old-files", (ex, q) -> store.oldFiles());
     route(server, "GET", "/raw", (ex, q) -> store.raw(require(q.get("row"), "row")));
 
     server.setExecutor(Executors.newFixedThreadPool(8));

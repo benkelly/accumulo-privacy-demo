@@ -14,6 +14,7 @@ import (
 type fakeStore struct {
 	cells   []Cell
 	deleted []string
+	old     []OldFile
 }
 
 func visible(label string, auths []string) bool {
@@ -52,7 +53,9 @@ func (f *fakeStore) Delete(row string) (int, error) {
 	return 1, nil
 }
 
-func (f *fakeStore) Compact() error                 { return nil }
+func (f *fakeStore) Compact() (int, error) { return len(f.old), nil }
+
+func (f *fakeStore) OldFiles() ([]OldFile, error)   { return f.old, nil }
 func (f *fakeStore) Raw(row string) ([]Cell, error) { return nil, nil }
 
 // patient builds one row with the same families and labels as gateway/Seed.java.
@@ -202,6 +205,7 @@ func TestAdminOnlyEndpoints(t *testing.T) {
 		{"DELETE", "/api/patients/p-0002"},
 		{"GET", "/api/patients/p-0002/raw"},
 		{"POST", "/api/compact"},
+		{"GET", "/api/old-files"},
 		{"GET", "/api/audit"},
 	}
 	for _, role := range []string{"Clinician", "Legal", "Analyst"} {
@@ -240,6 +244,25 @@ func TestAuditRecordsReads(t *testing.T) {
 	got := s.audit.Recent()
 	if len(got) != 2 || got[0].Action != "list" || got[1].Row != "p-0001" || got[1].Patient != "p-0001" {
 		t.Errorf("audit = %+v", got)
+	}
+}
+
+func TestOldFilesCountsWhatIsStillOnDisk(t *testing.T) {
+	s, store := newTestServer()
+	store.old = []OldFile{{Path: "a.rf", Exists: true}, {Path: "b.rf", Exists: false}}
+	if rec := do(s, "POST", "/api/compact", "Admin", ""); !strings.Contains(rec.Body.String(), `"oldFiles":2`) {
+		t.Errorf("compact: %s", rec.Body)
+	}
+	rec := do(s, "GET", "/api/old-files", "Admin", "")
+	var got struct {
+		Files     []OldFile
+		Remaining int
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Files) != 2 || got.Remaining != 1 {
+		t.Errorf("old-files = %+v", got)
 	}
 }
 

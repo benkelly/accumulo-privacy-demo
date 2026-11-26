@@ -1,10 +1,12 @@
 package gateway;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -13,6 +15,7 @@ import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.TablePermission;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
+import org.apache.accumulo.minicluster.MiniAccumuloConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,7 +30,10 @@ class StoreTest {
 
   @BeforeAll
   static void start() throws Exception {
-    mac = new MiniAccumuloCluster(dir, "root-secret");
+    // A fast garbage collector, so the test can wait for it. The 10s gap keeps the old files on
+    // disk for the check right after the compaction.
+    mac = new MiniAccumuloCluster(new MiniAccumuloConfig(dir, "root-secret")
+        .setSiteConfig(Map.of("gc.cycle.start", "1s", "gc.cycle.delay", "10s")));
     mac.start();
     try (AccumuloClient root = mac.createAccumuloClient("root", new PasswordToken("root-secret"))) {
       root.tableOperations().create(Store.TABLE);
@@ -79,8 +85,17 @@ class StoreTest {
     assertEquals(5, raw.stream().filter(Store.Cell::deleted).count(), "plus delete markers");
     assertTrue(raw.stream().anyMatch(c -> c.value().equals("Test Person")));
 
-    store.compact();
+    List<String> old = store.compact();
     assertTrue(store.raw("p-0002").isEmpty(), "compaction drops it from the files in use");
+    assertFalse(old.isEmpty(), "compaction replaced some files");
+    assertTrue(store.oldFiles().stream().allMatch(Store.OldFile::exists),
+        "the old files are still on disk right after the compaction");
+
+    long deadline = System.currentTimeMillis() + 60_000;
+    while (store.oldFiles().stream().anyMatch(Store.OldFile::exists)) {
+      assertTrue(System.currentTimeMillis() < deadline, "garbage collector removed the old files");
+      Thread.sleep(500);
+    }
   }
 
   private static void writePatient(String row) throws Exception {

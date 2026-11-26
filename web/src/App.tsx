@@ -50,18 +50,21 @@ export default function App() {
   useEffect(() => {
     let live = true;
     setError("");
-    Promise.all([getMe(who), listPatients(who)])
-      .then(([m, ps]) => {
-        if (live) {
-          setMe(m);
-          setPatients(ps);
-        }
-      })
+    getMe(who)
+      .then((m) => live && setMe(m))
       .catch((e: Error) => live && setError(e.message));
     return () => {
       live = false;
     };
   }, [who]);
+
+  const loadList = useCallback(() => {
+    listPatients(who)
+      .then(setPatients)
+      .catch((e: Error) => setError(e.message));
+  }, [who]);
+
+  useEffect(loadList, [loadList]);
 
   // Raw first, then the audit log, so the log already shows this raw read.
   const loadAdmin = useCallback(() => {
@@ -134,7 +137,19 @@ export default function App() {
           selected={selected}
           onSelect={isAdmin ? setSelected : undefined}
         />
-        {isAdmin && <AdminPanel selected={selected} raw={raw} audit={audit} onRefresh={loadAdmin} />}
+        {isAdmin && (
+          <AdminPanel
+            who={who}
+            selected={selected}
+            raw={raw}
+            audit={audit}
+            onRefresh={loadAdmin}
+            onChange={() => {
+              loadList();
+              loadAdmin();
+            }}
+          />
+        )}
       </main>
     </div>
   );

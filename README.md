@@ -74,6 +74,7 @@ does not publish its port. It has these endpoints:
 | `GET /scan?row=...&auths=A,B`   | Returns the cells that those auths can see          |
 | `POST /delete`                  | Writes a delete marker for every cell in a row      |
 | `POST /compact`                 | Runs a full compaction and waits for it             |
+| `GET /old-files`                | Checks HDFS for the files the last compaction replaced |
 | `GET /raw?row=...`              | Reads the row from the table files, with no filters |
 
 The gateway user holds every label, but `/scan` always uses the auths in
@@ -129,6 +130,7 @@ sees medical evidence.
 | `DELETE /api/patients/{id}`       | Admin      | Writes delete markers for the row  |
 | `GET /api/patients/{id}/raw`      | Admin      | What the files still hold          |
 | `POST /api/compact`               | Admin      | Runs a full compaction             |
+| `GET /api/old-files`              | Admin      | Files the last compaction replaced, and if they are still on HDFS |
 | `GET /api/audit`                  | Admin      | The last 100 reads and deletes     |
 
 The API refuses to delete `p-0009` and `p-0011`, because they are on legal
@@ -153,6 +155,33 @@ the port to localhost only.
 
 The page uses 16px text or larger and high contrast. It works with the
 keyboard. Each chip has a word on it, so colour is never the only signal.
+
+## The delete flow
+
+As Admin, pick a patient id, then run the 4 steps in the side panel one at a
+time. Each step shows what it found.
+
+1. Delete written. The API writes a delete marker for every cell. A read
+   of the patient now returns nothing.
+2. Still on disk? `/raw` reads the files directly. They still hold every
+   cell of the patient, next to the delete markers.
+3. Compaction. Accumulo writes new files without the deleted cells. The
+   files in use no longer hold the patient. But the old files are still on
+   HDFS.
+4. Garbage collection. The gateway remembers which files the compaction
+   replaced, and checks HDFS until Accumulo's garbage collector deletes them.
+
+In this demo the garbage collector runs every 30 seconds, so step 4 takes
+up to about 30 seconds. The real default is 5 minutes. The setting is
+`gc.cycle.delay` in `accumulo/conf/accumulo/accumulo.properties`.
+
+The data can still exist in places that this demo does not show: HDFS trash
+(off here), write-ahead logs, HDFS snapshots, the disk itself, and backups.
+
+Try to delete `p-0009` or `p-0011`. The API refuses, because the patient is
+on legal hold, and the page shows why.
+
+Run `make seed` to put the deleted patient back.
 
 To work on the page with live reload, run `make up`, then:
 

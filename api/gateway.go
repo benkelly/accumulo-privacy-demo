@@ -25,8 +25,15 @@ type Cell struct {
 type Store interface {
 	Scan(row string, auths []string) ([]Cell, error) // row "" means every row
 	Delete(row string) (int, error)
-	Compact() error
+	Compact() (int, error) // returns how many files it replaced
+	OldFiles() ([]OldFile, error)
 	Raw(row string) ([]Cell, error)
+}
+
+// OldFile is a file that the last compaction replaced. It stays on HDFS until garbage collection.
+type OldFile struct {
+	Path   string `json:"path"`
+	Exists bool   `json:"exists"`
 }
 
 // Gateway calls the Java gateway over HTTP. See gateway/src/main/java/gateway/Gateway.java.
@@ -55,8 +62,15 @@ func (g *Gateway) Delete(row string) (int, error) {
 	return out.Deleted, err
 }
 
-func (g *Gateway) Compact() error {
-	return g.call(http.MethodPost, "/compact", nil, nil)
+func (g *Gateway) Compact() (int, error) {
+	var out struct{ OldFiles int }
+	err := g.call(http.MethodPost, "/compact", nil, &out)
+	return out.OldFiles, err
+}
+
+func (g *Gateway) OldFiles() ([]OldFile, error) {
+	var files []OldFile
+	return files, g.call(http.MethodGet, "/old-files", nil, &files)
 }
 
 func (g *Gateway) Raw(row string) ([]Cell, error) {

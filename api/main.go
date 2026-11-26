@@ -42,6 +42,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("DELETE /api/patients/{id}", s.withCaller(adminOnly(s.delete)))
 	mux.HandleFunc("GET /api/patients/{id}/raw", s.withCaller(adminOnly(s.raw)))
 	mux.HandleFunc("POST /api/compact", s.withCaller(adminOnly(s.compact)))
+	mux.HandleFunc("GET /api/old-files", s.withCaller(adminOnly(s.oldFiles)))
 	mux.HandleFunc("GET /api/audit", s.withCaller(adminOnly(s.auditLog)))
 	return mux
 }
@@ -164,13 +165,35 @@ func (s *Server) raw(w http.ResponseWriter, r *http.Request, c caller) {
 	writeJSON(w, http.StatusOK, cells)
 }
 
+// compact drops deleted cells from the files in use. The files it replaced stay on HDFS
+// until Accumulo's garbage collector deletes them. See oldFiles.
 func (s *Server) compact(w http.ResponseWriter, r *http.Request, c caller) {
-	if err := s.store.Compact(); err != nil {
+	n, err := s.store.Compact()
+	if err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
 		return
 	}
 	s.log(c, "compact", "")
-	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	writeJSON(w, http.StatusOK, map[string]int{"oldFiles": n})
+}
+
+// oldFiles reports which files from the last compaction are still on HDFS.
+func (s *Server) oldFiles(w http.ResponseWriter, r *http.Request, c caller) {
+	files, err := s.store.OldFiles()
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	remaining := 0
+	for _, f := range files {
+		if f.Exists {
+			remaining++
+		}
+	}
+	if files == nil {
+		files = []OldFile{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"files": files, "remaining": remaining})
 }
 
 func (s *Server) auditLog(w http.ResponseWriter, r *http.Request, c caller) {
