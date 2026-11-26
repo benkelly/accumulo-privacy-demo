@@ -1,0 +1,36 @@
+name: Idea or change
+description: Suggest a change to the demo or its docs.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What do you suggest?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part?
+      options:
+        - Accumulo stack (accumulo/, docker-compose.yml)
+        - Gateway (gateway/)
+        - API (api/)
+        - Web page (web/)
+        - Docs or README
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: no-real-data
+    attributes:
+      label: Data
+      options:
+        - label: This issue contains no real personal data.
+          required: true

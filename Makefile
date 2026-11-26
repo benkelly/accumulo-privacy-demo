@@ -1,5 +1,8 @@
 .PHONY: up down seed unit logs clean
 
+# The build image from gateway/Dockerfile, so Dependabot updates one place.
+MAVEN_IMAGE := $(shell sed -n 's/^FROM \(maven:[^ ]*\).*/\1/p' gateway/Dockerfile)
+
 # Builds the images, starts the stack, waits until it is healthy, then seeds the data.
 up:
 	docker compose up -d --build --wait --wait-timeout 300
@@ -13,7 +16,7 @@ seed:
 # Unit tests, run in Docker so you do not need Java or Maven installed.
 unit:
 	docker run --rm -v "$(CURDIR)/gateway:/src" -v accumulo-privacy-demo-m2:/root/.m2 -w /src \
-		maven:3.9.16-eclipse-temurin-17 mvn -B -q test
+		$(MAVEN_IMAGE) mvn -B -q test
 
 down:
 	docker compose down

@@ -2,7 +2,7 @@ name: accumulo-privacy-demo
 
 services:
   zookeeper:
-    image: zookeeper:3.8.8-jre-17
+    image: zookeeper:3.8.8-jre-17 # Keep the same tag as the first FROM in accumulo/Dockerfile.
     hostname: zookeeper
     volumes:
       - zk-data:/data

@@ -1,13 +1,11 @@
 # One image for both the HDFS and Accumulo services.
 # Built locally because there is no maintained arm64 image for Accumulo 2.1 or Hadoop.
-ARG ZOOKEEPER_VERSION=3.8.8
-
-FROM zookeeper:${ZOOKEEPER_VERSION}-jre-17 AS zookeeper
+# Keep the same tag as the zookeeper service in docker-compose.yml.
+FROM zookeeper:3.8.8-jre-17 AS zookeeper
 
 # Not 17.0.21.1: its java launcher does not expand `dir/*` classpath entries, and Hadoop needs that.
 FROM eclipse-temurin:17.0.21_9-jre-jammy
 
-ARG ZOOKEEPER_VERSION
 ARG HADOOP_VERSION=3.3.6
 ARG ACCUMULO_VERSION=2.1.6
 
@@ -16,7 +14,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Accumulo only needs the ZooKeeper client jars, so copy them from the official image.
-COPY --from=zookeeper /apache-zookeeper-${ZOOKEEPER_VERSION}-bin /opt/zookeeper
+COPY --from=zookeeper /apache-zookeeper-*-bin /opt/zookeeper
 
 COPY fetch.sh /usr/local/bin/fetch.sh
 RUN fetch.sh hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz /opt/hadoop \
