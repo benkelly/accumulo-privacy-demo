@@ -47,9 +47,13 @@ export default function App() {
   const [error, setError] = useState("");
   const isAdmin = who.role === "Admin";
 
+  const changeWho = (next: Who) => {
+    setError("");
+    setWho(next);
+  };
+
   useEffect(() => {
     let live = true;
-    setError("");
     getMe(who)
       .then((m) => live && setMe(m))
       .catch((e: Error) => live && setError(e.message));
@@ -91,7 +95,7 @@ export default function App() {
               key={r}
               type="button"
               aria-pressed={who.role === r}
-              onClick={() => setWho({ ...who, role: r })}
+              onClick={() => changeWho({ ...who, role: r })}
               className={`min-w-36 rounded-lg border-2 border-gray-900 px-5 py-3 text-lg font-semibold aria-pressed:bg-gray-900 aria-pressed:text-white ${focus}`}
             >
               {r}
@@ -103,7 +107,7 @@ export default function App() {
             Patient id
             <select
               value={who.patient}
-              onChange={(e) => setWho({ ...who, patient: e.target.value })}
+              onChange={(e) => changeWho({ ...who, patient: e.target.value })}
               className={`rounded border-2 border-gray-900 px-2 py-1 ${focus}`}
             >
               {PATIENT_IDS.map((id) => (
