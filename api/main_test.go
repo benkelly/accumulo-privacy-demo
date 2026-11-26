@@ -243,6 +243,24 @@ func TestAuditRecordsReads(t *testing.T) {
 	}
 }
 
+func TestMeShowsTheCallersLabels(t *testing.T) {
+	s, _ := newTestServer()
+	rec := do(s, "GET", "/api/me", "Patient", "p-0001")
+	var got struct {
+		Role, Patient string
+		Auths         []string
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Role != "Patient" || got.Patient != "p-0001" || !slices.Equal(got.Auths, []string{"PATIENT_p0001"}) {
+		t.Errorf("me = %+v", got)
+	}
+	if len(s.audit.Recent()) != 0 {
+		t.Errorf("me was audited")
+	}
+}
+
 func TestAuditKeepsLast100(t *testing.T) {
 	a := &Audit{}
 	for i := 0; i < 150; i++ {

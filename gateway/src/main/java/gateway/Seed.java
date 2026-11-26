@@ -50,6 +50,13 @@ public class Seed {
         throw new IllegalStateException("write failed: " + res.statusCode() + " " + res.body());
       }
     }
+    // Compact, so the files hold one version of each cell even after many seeds. Then /raw
+    // shows only what the delete flow adds.
+    HttpResponse<String> res = http.send(HttpRequest.newBuilder(URI.create(base + "/compact"))
+        .POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
+    if (res.statusCode() != 200) {
+      throw new IllegalStateException("compact failed: " + res.statusCode() + " " + res.body());
+    }
     System.out.println("seeded " + PATIENTS + " patients, " + cells.size() + " cells");
   }
 

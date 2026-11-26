@@ -15,8 +15,21 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: docker
-    directories: [/accumulo, /api, /gateway]
+    directories: [/accumulo, /api, /gateway, /web]
     schedule:
       interval: weekly
     commit-message:

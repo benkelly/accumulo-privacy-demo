@@ -72,6 +72,19 @@ services:
       interval: 5s
       retries: 20
 
+  # The web page on http://localhost:5173. nginx also forwards /api to the API.
+  web:
+    build: ./web
+    image: accumulo-privacy-demo/web:local
+    ports:
+      - "127.0.0.1:5173:8080"
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 5s
+      retries: 20
+
   # One-shot job: `make seed` (and `make up`) runs it.
   seed:
     image: accumulo-privacy-demo/gateway:local
