@@ -1,15 +1,21 @@
-import type { AuditEntry, Cell } from "./api";
+import type { AuditEntry, Cell, Who } from "./api";
+import DeleteFlow from "./DeleteFlow";
 
 type Props = {
+  who: Who;
   selected: string;
   raw: Cell[];
   audit: AuditEntry[];
   onRefresh: () => void;
+  onChange: () => void;
 };
 
-export default function AdminPanel({ selected, raw, audit, onRefresh }: Props) {
+export default function AdminPanel({ who, selected, raw, audit, onRefresh, onChange }: Props) {
   return (
     <aside aria-label="Admin panel" className="space-y-6 rounded border-2 border-gray-900 p-4">
+      {/* A new key resets the flow when you pick another patient. */}
+      <DeleteFlow key={selected} who={who} id={selected} onChange={onChange} />
+
       <section>
         <h2 className="text-xl font-bold">Stored cells for {selected}</h2>
         <p>What the files hold, with the label on each cell.</p>

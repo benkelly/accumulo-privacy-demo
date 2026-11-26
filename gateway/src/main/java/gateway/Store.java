@@ -29,6 +29,8 @@ public class Store {
       boolean deleted) {}
 
   private final AccumuloClient client;
+  // NOTE: in memory, last compaction only. A restart forgets it.
+  private volatile List<String> replaced = List.of();
 
   public Store(AccumuloClient client) {
     this.client = client;
@@ -75,9 +77,31 @@ public class Store {
     return cells.size();
   }
 
-  /** Full major compaction. This is the step that drops deleted cells from the files. */
-  public void compact() throws Exception {
+  /**
+   * Full major compaction. This is the step that drops deleted cells from the files in use.
+   * Returns the files it replaced. They stay on HDFS until the garbage collector deletes them.
+   */
+  public List<String> compact() throws Exception {
+    client.tableOperations().flush(TABLE, null, null, true);
+    List<String> before = tableFiles();
     client.tableOperations().compact(TABLE, new CompactionConfig().setFlush(true).setWait(true));
+    List<String> old = new ArrayList<>(before);
+    old.removeAll(tableFiles());
+    replaced = List.copyOf(old);
+    return replaced;
+  }
+
+  /** One file that the last compaction replaced, and whether it is still on HDFS. */
+  public record OldFile(String path, boolean exists) {}
+
+  /** Checks the files from the last compaction. When none exist, the garbage collector is done. */
+  public List<OldFile> oldFiles() throws Exception {
+    List<OldFile> out = new ArrayList<>();
+    for (String f : replaced) {
+      Path p = new Path(f);
+      out.add(new OldFile(f, p.getFileSystem(new Configuration()).exists(p)));
+    }
+    return out;
   }
 
   /**
