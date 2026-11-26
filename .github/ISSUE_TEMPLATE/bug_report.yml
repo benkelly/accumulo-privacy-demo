@@ -1,0 +1,51 @@
+name: Bug report
+description: Something in the demo does not work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repo is public. Do not paste real personal data, passwords or tokens.
+        The demo data is fake, so use it in your examples.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. make clean
+        2. make up
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The output of the command that failed, or `docker compose logs <service>`.
+      render: text
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: macOS 26, Apple Silicon, Docker Desktop with Docker 28.3
+    validations:
+      required: true
+  - type: checkboxes
+    id: no-real-data
+    attributes:
+      label: Data
+      options:
+        - label: This issue contains no real personal data.
+          required: true
