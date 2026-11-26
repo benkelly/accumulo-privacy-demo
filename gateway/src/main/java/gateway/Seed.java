@@ -33,6 +33,8 @@ public class Seed {
       "Advised on diet and exercise."};
   static final String[] CASE_NOTES = {"Complaint about a delayed referral. File open.",
       "Insurance claim after a fall at work.", "Records requested by a solicitor."};
+  static final String[] EVIDENCE = {"GP letter on file.", "Specialist report attached.",
+      "X-ray results sent to the solicitor."};
 
   public static void main(String[] args) throws Exception {
     String base = args.length > 0 ? args[0] : "http://localhost:8081";
@@ -79,7 +81,9 @@ public class Seed {
       cells.add(cell(row, "clinical", "diagnosis", "CLINICIAN|" + self, diagnosis));
       cells.add(cell(row, "clinical", "notes", "CLINICIAN", notes));
       if (first || hold || rnd.nextInt(4) == 0) {
-        cells.add(cell(row, "legal", "case_note", "LEGAL&CLINICIAN", pick(rnd, CASE_NOTES)));
+        cells.add(cell(row, "legal", "case_note", "LEGAL", pick(rnd, CASE_NOTES)));
+        // Needs both labels, so only someone who is Legal and Clinician (Admin here) sees it.
+        cells.add(cell(row, "legal", "medical_evidence", "LEGAL&CLINICIAN", pick(rnd, EVIDENCE)));
       }
       cells.add(cell(row, "legal", "hold", "LEGAL", String.valueOf(hold)));
     }
