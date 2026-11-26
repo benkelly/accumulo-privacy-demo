@@ -17,6 +17,11 @@
     <name>dfs.datanode.data.dir</name>
     <value>/data/data</value>
   </property>
+  <!-- Leave safe mode as soon as the one datanode reports, not 30 seconds later. -->
+  <property>
+    <name>dfs.namenode.safemode.extension</name>
+    <value>0</value>
+  </property>
   <property>
     <name>dfs.namenode.rpc-bind-host</name>
     <value>0.0.0.0</value>
