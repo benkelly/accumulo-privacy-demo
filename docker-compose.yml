@@ -32,11 +32,38 @@ services:
     depends_on:
       zookeeper: { condition: service_healthy }
       hdfs: { condition: service_healthy }
+    stop_grace_period: 60s
+    # The scan waits until the patients table is online, for example after a log replay.
     healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/ready && accumulo shell -e tables"]
+      test: ["CMD-SHELL", "test -f /tmp/ready && accumulo shell -e 'scan -t patients -np -r p-0000'"]
       interval: 10s
+      timeout: 60s
       start_period: 180s
       start_interval: 5s
+
+  # Internal only: no ports are published to the host.
+  gateway:
+    build: ./gateway
+    image: accumulo-privacy-demo/gateway:local
+    environment:
+      ACCUMULO_INSTANCE: demo
+      ACCUMULO_ZOOKEEPERS: zookeeper:2181
+      ACCUMULO_USER: gateway
+      ACCUMULO_PASSWORD: demo-gateway # Demo only, set in accumulo/init.sh.
+    depends_on:
+      accumulo: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8081"]
+      interval: 5s
+      retries: 20
+
+  # One-shot job: `make seed` (and `make up`) runs it.
+  seed:
+    image: accumulo-privacy-demo/gateway:local
+    command: ["java", "-cp", "/app/*", "gateway.Seed", "http://gateway:8081"]
+    depends_on:
+      gateway: { condition: service_healthy }
+    profiles: [seed]
 
 volumes:
   zk-data:
