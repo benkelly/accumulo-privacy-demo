@@ -1,7 +1,8 @@
 .PHONY: up down seed unit logs clean
 
-# The build image from gateway/Dockerfile, so Dependabot updates one place.
+# The build images from the Dockerfiles, so Dependabot updates one place.
 MAVEN_IMAGE := $(shell sed -n 's/^FROM \(maven:[^ ]*\).*/\1/p' gateway/Dockerfile)
+GO_IMAGE := $(shell sed -n 's/^FROM \(golang:[^ ]*\).*/\1/p' api/Dockerfile)
 
 # Builds the images, starts the stack, waits until it is healthy, then seeds the data.
 up:
@@ -13,8 +14,9 @@ up:
 seed:
 	docker compose run --rm --no-deps seed
 
-# Unit tests, run in Docker so you do not need Java or Maven installed.
+# Unit tests, run in Docker so you do not need Java, Maven or Go installed.
 unit:
+	docker run --rm -v "$(CURDIR)/api:/src" -w /src $(GO_IMAGE) go test ./...
 	docker run --rm -v "$(CURDIR)/gateway:/src" -v accumulo-privacy-demo-m2:/root/.m2 -w /src \
 		$(MAVEN_IMAGE) mvn -B -q test
 
