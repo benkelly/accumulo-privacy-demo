@@ -58,12 +58,18 @@ export default function DeleteFlow({ who, id, onChange }: Props) {
   }
 
   async function step3() {
-    const { oldFiles } = await compact(who);
+    await compact(who);
     const raw = await getRaw(who, id);
-    finish(
-      `The files in use now hold ${raw.length || "no"} cells of ${id}. ` +
-        `But the ${oldFiles} old files from before the compaction are still on HDFS.`,
-    );
+    // Check HDFS now: the collector may already have run since the compaction.
+    const { files, remaining } = await getOldFiles(who);
+    const n = files.length;
+    const onHdfs =
+      remaining === 0
+        ? `The garbage collector has already removed the ${n} old files from before the compaction.`
+        : remaining === n
+          ? `But the ${n} old files from before the compaction are still on HDFS.`
+          : `But ${remaining} of the ${n} old files from before the compaction are still on HDFS.`;
+    finish(`The files in use now hold ${raw.length || "no"} cells of ${id}. ${onHdfs}`);
   }
 
   async function step4() {
