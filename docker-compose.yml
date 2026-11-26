@@ -1,0 +1,44 @@
+name: accumulo-privacy-demo
+
+services:
+  zookeeper:
+    image: zookeeper:3.8.8-jre-17
+    hostname: zookeeper
+    volumes:
+      - zk-data:/data
+      - zk-datalog:/datalog
+    healthcheck:
+      test: ["CMD", "zkServer.sh", "status"]
+      interval: 5s
+      retries: 20
+
+  hdfs:
+    build: ./accumulo
+    image: accumulo-privacy-demo/accumulo:local
+    hostname: hdfs
+    command: start-hdfs.sh
+    volumes:
+      - hdfs-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "hdfs dfsadmin -safemode get | grep -q OFF"]
+      interval: 5s
+      retries: 30
+
+  accumulo:
+    build: ./accumulo
+    image: accumulo-privacy-demo/accumulo:local
+    hostname: accumulo
+    command: start-accumulo.sh
+    depends_on:
+      zookeeper: { condition: service_healthy }
+      hdfs: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/ready && accumulo shell -e tables"]
+      interval: 10s
+      start_period: 180s
+      start_interval: 5s
+
+volumes:
+  zk-data:
+  zk-datalog:
+  hdfs-data:
