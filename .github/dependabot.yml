@@ -16,7 +16,7 @@ updates:
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
-    directories: [/accumulo, /gateway]
+    directories: [/accumulo, /api, /gateway]
     schedule:
       interval: weekly
     commit-message:
