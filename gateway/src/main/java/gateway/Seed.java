@@ -1,5 +1,6 @@
 package gateway;
 
+import com.google.gson.Gson;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -7,8 +8,6 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import com.google.gson.Gson;
 
 /**
  * Writes 20 made-up patients through the gateway's /write endpoint. Every value is generated.
@@ -36,6 +35,7 @@ public class Seed {
   static final String[] EVIDENCE = {"GP letter on file.", "Specialist report attached.",
       "X-ray results sent to the solicitor."};
 
+  /** Writes the patients through the gateway at args[0], then compacts. */
   public static void main(String[] args) throws Exception {
     String base = args.length > 0 ? args[0] : "http://localhost:8081";
     HttpClient http = HttpClient.newHttpClient();
@@ -74,7 +74,7 @@ public class Seed {
       String row = String.format("p-%04d", i);
       String self = String.format("PATIENT_p%04d", i);
       boolean first = i == 1;
-      boolean hold = i == hold1 || i == hold2;
+      final boolean hold = i == hold1 || i == hold2;
 
       String name = first ? "Kyle Byrne" : pick(rnd, FIRST) + " " + pick(rnd, LAST);
       String county = first ? "Dublin" : pick(rnd, COUNTIES);

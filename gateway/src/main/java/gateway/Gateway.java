@@ -1,5 +1,8 @@
 package gateway;
 
+import com.google.gson.Gson;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -9,14 +12,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
-
 import org.apache.accumulo.core.client.Accumulo;
 import org.apache.accumulo.core.client.AccumuloClient;
 import org.apache.accumulo.core.security.Authorizations;
-
-import com.google.gson.Gson;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 
 /**
  * Internal HTTP front for {@link Store}. Only the API calls it, and it has no access control of
@@ -28,9 +26,10 @@ public class Gateway {
   record RowRequest(String row) {}
 
   interface Handler {
-    Object handle(HttpExchange ex, Map<String,String> query) throws Exception;
+    Object handle(HttpExchange ex, Map<String, String> query) throws Exception;
   }
 
+  /** Connects to Accumulo with the ACCUMULO_* variables and serves HTTP on port 8081. */
   public static void main(String[] args) throws IOException {
     AccumuloClient client = Accumulo.newClient()
         .to(env("ACCUMULO_INSTANCE"), env("ACCUMULO_ZOOKEEPERS"))
@@ -102,8 +101,8 @@ public class Gateway {
     }
   }
 
-  private static Map<String,String> query(HttpExchange ex) {
-    Map<String,String> q = new HashMap<>();
+  private static Map<String, String> query(HttpExchange ex) {
+    Map<String, String> q = new HashMap<>();
     String raw = ex.getRequestURI().getRawQuery();
     if (raw != null) {
       for (String pair : raw.split("&")) {

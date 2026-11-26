@@ -3,7 +3,6 @@ package gateway;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.accumulo.core.client.AccumuloClient;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.Scanner;
@@ -32,10 +31,12 @@ public class Store {
   // NOTE: in memory, last compaction only. A restart forgets it.
   private volatile List<String> replaced = List.of();
 
+  /** Uses the client's user for every call. That user must hold every label. */
   public Store(AccumuloClient client) {
     this.client = client;
   }
 
+  /** Writes one cell with its label. */
   public void write(Cell c) throws Exception {
     Mutation m = new Mutation(c.row());
     m.put(c.family(), c.qualifier(), new ColumnVisibility(c.visibility()), c.value());
@@ -133,7 +134,7 @@ public class Store {
     try (Scanner s = client.createScanner("accumulo.metadata", Authorizations.EMPTY)) {
       s.setRange(new Range(id + ";", id + "<"));
       s.fetchColumnFamily(new Text("file"));
-      for (Map.Entry<Key,Value> e : s) {
+      for (Map.Entry<Key, Value> e : s) {
         files.add(e.getKey().getColumnQualifier().toString());
       }
     }
@@ -144,9 +145,9 @@ public class Store {
     return client.securityOperations().getUserAuthorizations(client.whoami());
   }
 
-  private static List<Cell> cells(Iterable<Map.Entry<Key,Value>> entries) {
+  private static List<Cell> cells(Iterable<Map.Entry<Key, Value>> entries) {
     List<Cell> out = new ArrayList<>();
-    for (Map.Entry<Key,Value> e : entries) {
+    for (Map.Entry<Key, Value> e : entries) {
       Key k = e.getKey();
       out.add(new Cell(k.getRow().toString(), k.getColumnFamily().toString(),
           k.getColumnQualifier().toString(), k.getColumnVisibility().toString(),
