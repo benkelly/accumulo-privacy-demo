@@ -10,7 +10,8 @@ if ! accumulo shell -e "tables" | grep -qx patients; then
 
   printf 'demo-gateway\ndemo-gateway\n' | accumulo shell -e "createuser gateway"
   accumulo shell -e "setauths -u gateway -s $auths"
-  accumulo shell -e "createtable patients"
+  # -evc: refuse a write with a label the writer does not hold, so a typo cannot hide a cell.
+  accumulo shell -e "createtable -evc patients"
   for perm in READ WRITE ALTER_TABLE; do
     accumulo shell -e "grant Table.$perm -t patients -u gateway"
   done
