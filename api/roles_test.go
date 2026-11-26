@@ -47,6 +47,15 @@ func TestAdminHoldsEveryLabel(t *testing.T) {
 	}
 }
 
+func TestChangingTheResultDoesNotChangeTheTable(t *testing.T) {
+	got, _ := authsFor("Clinician", "")
+	got[0] = "LEGAL"
+	_ = append(got[:1], "LEGAL")
+	if again, _ := authsFor("Clinician", ""); !slices.Equal(again, []string{"PII", "CLINICIAN"}) {
+		t.Errorf("Clinician is now %v", again)
+	}
+}
+
 func TestPatientLabelsDoNotLeakIntoOtherRoles(t *testing.T) {
 	for _, role := range []string{"Clinician", "Legal", "Analyst"} {
 		got, _ := authsFor(role, "p-0001")

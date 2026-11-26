@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 )
 
@@ -35,7 +36,8 @@ func authsFor(role, patient string) ([]string, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown role %q: use Admin, Clinician, Legal, Analyst or Patient", role)
 	}
-	return auths, nil
+	// A copy, so a caller that changes its slice cannot change the table for everyone.
+	return slices.Clone(auths), nil
 }
 
 // patientLabel turns "p-0001" into "PATIENT_p0001". It rejects ids outside the seeded range.
